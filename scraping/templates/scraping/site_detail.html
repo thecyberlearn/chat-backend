@@ -1,0 +1,67 @@
+{% extends 'scraping/base.html' %}
+
+{% block title %}{{ site.name }} - Chat Backend{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h2>{{ site.name }}</h2>
+    <a href="{% url 'site_list' %}" class="btn" style="background: #6c757d;">← Back to Sites</a>
+</div>
+
+<div class="card">
+    <h3>Site Information</h3>
+    <p><strong>URL:</strong> <a href="{{ site.url }}" target="_blank">{{ site.url }}</a></p>
+    <p><strong>Status:</strong> <span id="status" class="status status-{{ site.status }}">{{ site.get_status_display }}</span></p>
+    <p><strong>Created:</strong> {{ site.created_at|date:"M j, Y g:i A" }}</p>
+
+    <div style="margin-top: 20px;">
+        {% if site.status == 'pending' or site.status == 'failed' %}
+            <button id="scrape-btn" onclick="scrapeSite({{ site.id }})" class="btn btn-success">
+                {% if site.status == 'failed' %}Retry Scraping{% else %}Start Scraping{% endif %}
+            </button>
+        {% elif site.status == 'completed' %}
+            <button id="scrape-btn" onclick="scrapeSite({{ site.id }})" class="btn">Scrape Again</button>
+        {% else %}
+            <button disabled class="btn" style="background: #ccc;">Scraping in Progress...</button>
+        {% endif %}
+    </div>
+</div>
+
+{% if content %}
+    <div class="card">
+        <h3>Scraped Content</h3>
+
+        {% if content.success %}
+            {% if content.company_name %}
+                <p><strong>Company Name:</strong> {{ content.company_name }}</p>
+            {% endif %}
+
+            {% if content.description %}
+                <p><strong>Description:</strong> {{ content.description }}</p>
+            {% endif %}
+
+            <p><strong>Scraped:</strong> {{ content.scraped_at|date:"M j, Y g:i A" }}</p>
+
+            {% if content.content %}
+                <h4>Full Content:</h4>
+                <div class="content-display">{{ content.content }}</div>
+            {% endif %}
+        {% else %}
+            <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px;">
+                <strong>Scraping Failed:</strong> {{ content.error_message }}
+            </div>
+        {% endif %}
+    </div>
+{% elif site.status == 'pending' %}
+    <div class="card" style="background: #f8f9fa;">
+        <h3>Ready to Scrape</h3>
+        <p>Click "Start Scraping" above to extract content from this website using Firecrawl AI.</p>
+        <p>We'll extract:</p>
+        <ul>
+            <li>Company name and description</li>
+            <li>Main website content</li>
+            <li>Structured data for chatbot training</li>
+        </ul>
+    </div>
+{% endif %}
+{% endblock %}

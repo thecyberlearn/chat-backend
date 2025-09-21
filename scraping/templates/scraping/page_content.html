@@ -1,0 +1,71 @@
+{% extends 'scraping/base.html' %}
+
+{% block title %}{{ page.title|default:"Page Content" }} - Chat Backend{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h2>{{ page.title|default:"Page Content" }}</h2>
+    <a href="{% url 'business_detail' page.business.id %}" class="btn" style="background: #6c757d;">← Back to {{ page.business.name }}</a>
+</div>
+
+<!-- Page Information -->
+<div class="card">
+    <h3>Page Information</h3>
+    <p><strong>Business:</strong> {{ page.business.name }}</p>
+    <p><strong>URL:</strong> <a href="{{ page.url }}" target="_blank">{{ page.url }}</a></p>
+    {% if page.description %}
+        <p><strong>Description:</strong> {{ page.description }}</p>
+    {% endif %}
+    <p><strong>Crawled:</strong> {{ page.crawled_at|date:"M j, Y g:i A" }}</p>
+</div>
+
+<!-- Page Content -->
+<div class="card">
+    <h3>Page Content</h3>
+
+    {% if page.success %}
+        {% if page.content %}
+            <div class="content-display">{{ page.content }}</div>
+        {% else %}
+            <p style="color: #6c757d; font-style: italic;">No content extracted from this page.</p>
+        {% endif %}
+    {% else %}
+        <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px;">
+            <strong>Crawling Failed:</strong> {{ page.error_message }}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Content Analysis -->
+{% if page.success and page.content %}
+<div class="card" style="background: #f8f9fa;">
+    <h3>Content Analysis</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+        <div>
+            <strong>Content Length:</strong><br>
+            {{ page.content|length }} characters
+        </div>
+        <div>
+            <strong>Word Count:</strong><br>
+            {{ page.content|wordcount }} words
+        </div>
+        <div>
+            <strong>Lines:</strong><br>
+            {{ page.content|linebreaks|length }} lines
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.content-display {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+    white-space: pre-wrap;
+    max-height: 500px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}

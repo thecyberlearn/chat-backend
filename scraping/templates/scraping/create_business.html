@@ -1,0 +1,50 @@
+{% extends 'scraping/base.html' %}
+
+{% block title %}Add New Business - Chat Backend{% endblock %}
+
+{% block content %}
+<h2>Add New Business</h2>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="name">Business Name:</label>
+            <input type="text" id="name" name="name" required placeholder="e.g., Acme Corporation">
+        </div>
+
+        <div class="form-group">
+            <label for="website_url">Website URL:</label>
+            <input type="url" id="website_url" name="website_url" required placeholder="https://example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description (Optional):</label>
+            <textarea id="description" name="description" rows="3" placeholder="Brief description of the business" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; resize: vertical;"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="industry">Industry (Optional):</label>
+            <input type="text" id="industry" name="industry" placeholder="e.g., Technology, Healthcare, Finance">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-success">Create Business</button>
+            <a href="{% url 'business_list' %}" class="btn" style="background: #6c757d;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="background: #f8f9fa;">
+    <h3>What's Next?</h3>
+    <p>After creating your business, you'll be able to:</p>
+    <ol>
+        <li><strong>Add Multiple URLs</strong> - Main website, about page, services, contact, etc.</li>
+        <li><strong>Organize by Type</strong> - Categorize URLs for better content organization</li>
+        <li><strong>Set Priorities</strong> - Control which URLs are most important</li>
+        <li><strong>Bulk Scraping</strong> - Scrape all URLs with one click</li>
+        <li><strong>Content Management</strong> - Review and organize all extracted data</li>
+    </ol>
+</div>
+{% endblock %}

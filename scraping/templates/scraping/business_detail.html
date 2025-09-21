@@ -1,0 +1,124 @@
+{% extends 'scraping/base.html' %}
+
+{% block title %}{{ business.name }} - Chat Backend{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h2>{{ business.name }}</h2>
+    <a href="{% url 'business_list' %}" class="btn" style="background: #6c757d;">← Back to Businesses</a>
+</div>
+
+<!-- Business Information -->
+<div class="card">
+    <h3>Business Information</h3>
+    <p><strong>Website:</strong> <a href="{{ business.website_url }}" target="_blank">{{ business.website_url }}</a></p>
+    {% if business.description %}
+        <p><strong>Description:</strong> {{ business.description }}</p>
+    {% endif %}
+    {% if business.industry %}
+        <p><strong>Industry:</strong> {{ business.industry }}</p>
+    {% endif %}
+    <p><strong>Status:</strong> <span id="business-status" class="status status-{{ business.status }}">{{ business.get_status_display }}</span></p>
+    <p><strong>Pages:</strong> {{ business.scraped_pages }}/{{ business.total_pages }} crawled</p>
+    <p><strong>Created:</strong> {{ business.created_at|date:"M j, Y g:i A" }}</p>
+
+    <div style="margin-top: 20px;">
+        <button id="crawl-btn" onclick="crawlWebsite({{ business.id }})" class="btn btn-success">
+            Crawl Website
+        </button>
+    </div>
+</div>
+
+<!-- Crawled Pages -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3>Crawled Pages</h3>
+    </div>
+
+    <!-- Pages List -->
+    {% if pages %}
+        <div id="pages-list">
+            {% for page in pages %}
+                <div class="card" style="margin-bottom: 15px;" id="page-{{ page.id }}">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4>{{ page.title|default:"Untitled Page" }}</h4>
+                            <p><strong>URL:</strong> <a href="{{ page.url }}" target="_blank">{{ page.url }}</a></p>
+                            {% if page.description %}
+                                <p><strong>Description:</strong> {{ page.description|truncatewords:20 }}</p>
+                            {% endif %}
+                            <p><strong>Crawled:</strong> {{ page.crawled_at|date:"M j, Y g:i A" }}</p>
+                        </div>
+                        <div style="display: flex; gap: 5px; flex-direction: column;">
+                            <a href="{% url 'page_content' page.id %}" class="btn" style="font-size: 12px; padding: 5px 10px; background: #28a745;">View Content</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 5px;">
+            <h4>No Pages Crawled Yet</h4>
+            <p>Click "Crawl Website" above to discover and extract content from all pages on the website.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function crawlWebsite(businessId) {
+    const button = document.getElementById('crawl-btn');
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Crawling Website...';
+
+    // Update business status
+    const businessStatus = document.getElementById('business-status');
+    businessStatus.textContent = 'crawling';
+    businessStatus.className = 'status status-crawling';
+
+    fetch(`/businesses/${businessId}/crawl/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            businessStatus.textContent = 'completed';
+            businessStatus.className = 'status status-completed';
+            alert(`Successfully crawled ${data.total_pages} pages from the website`);
+
+            // Refresh to show crawled pages
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            businessStatus.textContent = 'failed';
+            businessStatus.className = 'status status-failed';
+            alert('Crawling failed: ' + data.error);
+        }
+
+        button.disabled = false;
+        button.textContent = originalText;
+    })
+    .catch(error => {
+        businessStatus.textContent = 'failed';
+        businessStatus.className = 'status status-failed';
+        button.disabled = false;
+        button.textContent = originalText;
+        alert('Error: ' + error);
+    });
+}
+</script>
+
+<style>
+select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+</style>
+{% endblock %}

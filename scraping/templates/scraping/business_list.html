@@ -1,0 +1,51 @@
+{% extends 'scraping/base.html' %}
+
+{% block title %}Businesses - Chat Backend{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h2>Your Businesses</h2>
+    <a href="{% url 'create_business' %}" class="btn">+ Add New Business</a>
+</div>
+
+{% if businesses %}
+    {% for business in businesses %}
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <h3><a href="{% url 'business_detail' business.id %}" style="text-decoration: none;">{{ business.name }}</a></h3>
+                    {% if business.description %}
+                        <p><strong>Description:</strong> {{ business.description|truncatewords:20 }}</p>
+                    {% endif %}
+                    {% if business.industry %}
+                        <p><strong>Industry:</strong> {{ business.industry }}</p>
+                    {% endif %}
+                    <p><strong>Status:</strong> <span class="status status-{{ business.status }}">{{ business.get_status_display }}</span></p>
+                    <p><strong>Pages:</strong> {{ business.scraped_pages }}/{{ business.total_pages }} crawled</p>
+                    <p><strong>Created:</strong> {{ business.created_at|date:"M j, Y g:i A" }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'business_detail' business.id %}" class="btn">View Pages</a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <h3>No businesses yet</h3>
+        <p>Get started by adding your first business and its URLs to scrape!</p>
+        <a href="{% url 'create_business' %}" class="btn">Add Your First Business</a>
+    </div>
+{% endif %}
+
+<div class="card" style="background: #f8f9fa; margin-top: 30px;">
+    <h3>Business-Centric Approach</h3>
+    <p>Each business can have multiple URLs (homepage, about, services, contact, etc.) for comprehensive scraping.</p>
+    <ol>
+        <li><strong>Create Business</strong> - Add company info and branding</li>
+        <li><strong>Add URLs</strong> - Add multiple pages to scrape (about, services, contact, etc.)</li>
+        <li><strong>Bulk Scrape</strong> - Extract content from all URLs simultaneously</li>
+        <li><strong>Manage Content</strong> - Review and organize all scraped data</li>
+    </ol>
+</div>
+{% endblock %}

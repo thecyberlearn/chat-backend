@@ -1,0 +1,113 @@
+{% extends 'scraping/base.html' %}
+
+{% block title %}{{ business_url.name }} Content - Chat Backend{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h2>{{ business_url.name }} Content</h2>
+    <a href="{% url 'business_detail' business_url.business.id %}" class="btn" style="background: #6c757d;">← Back to {{ business_url.business.name }}</a>
+</div>
+
+<!-- URL Information -->
+<div class="card">
+    <h3>URL Information</h3>
+    <p><strong>Business:</strong> {{ business_url.business.name }}</p>
+    <p><strong>URL:</strong> <a href="{{ business_url.url }}" target="_blank">{{ business_url.url }}</a></p>
+    <p><strong>Type:</strong> {{ business_url.get_url_type_display }}</p>
+    <p><strong>Priority:</strong> {{ business_url.priority }}/10</p>
+    <p><strong>Status:</strong> <span class="status status-{{ business_url.status }}">{{ business_url.get_status_display }}</span></p>
+
+    <div style="margin-top: 20px;">
+        <button onclick="rescrapeUrl({{ business_url.id }})" class="btn">Re-scrape Content</button>
+    </div>
+</div>
+
+<!-- Scraped Content -->
+{% if content %}
+    <div class="card">
+        <h3>Scraped Content</h3>
+
+        {% if content.success %}
+            {% if content.company_name %}
+                <p><strong>Company Name:</strong> {{ content.company_name }}</p>
+            {% endif %}
+
+            {% if content.description %}
+                <p><strong>Description:</strong> {{ content.description }}</p>
+            {% endif %}
+
+            <p><strong>Scraped:</strong> {{ content.scraped_at|date:"M j, Y g:i A" }}</p>
+
+            {% if content.content %}
+                <h4>Full Content:</h4>
+                <div class="content-display">{{ content.content }}</div>
+            {% endif %}
+        {% else %}
+            <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px;">
+                <strong>Scraping Failed:</strong> {{ content.error_message }}
+                <div style="margin-top: 10px;">
+                    <button onclick="rescrapeUrl({{ business_url.id }})" class="btn">Retry Scraping</button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="card" style="background: #f8f9fa;">
+        <h3>No Content Yet</h3>
+        <p>This URL hasn't been scraped yet.</p>
+        <button onclick="rescrapeUrl({{ business_url.id }})" class="btn">Scrape Now</button>
+    </div>
+{% endif %}
+
+<!-- Content Analysis -->
+{% if content and content.success and content.content %}
+<div class="card" style="background: #f8f9fa;">
+    <h3>Content Analysis</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+        <div>
+            <strong>Content Length:</strong><br>
+            {{ content.content|length }} characters
+        </div>
+        <div>
+            <strong>Word Count:</strong><br>
+            {{ content.content|wordcount }} words
+        </div>
+        <div>
+            <strong>Lines:</strong><br>
+            {{ content.content|linebreaks|length }} lines
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function rescrapeUrl(urlId) {
+    const button = event.target;
+    button.disabled = true;
+    button.textContent = 'Scraping...';
+
+    fetch(`/businesses/url/${urlId}/scrape/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload page to show new content
+            location.reload();
+        } else {
+            alert('Scraping failed: ' + data.error);
+            button.disabled = false;
+            button.textContent = 'Retry Scraping';
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+        button.disabled = false;
+        button.textContent = 'Retry Scraping';
+    });
+}
+</script>
+{% endblock %}
