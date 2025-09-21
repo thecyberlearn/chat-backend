@@ -5,7 +5,12 @@
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
     <h2>{{ business.name }}</h2>
-    <a href="{% url 'business_list' %}" class="btn" style="background: #6c757d;">← Back to Businesses</a>
+    <div style="display: flex; gap: 10px;">
+        <a href="{% url 'edit_business' business.id %}" class="btn" style="background: #17a2b8; color: white;">
+            <i class="fas fa-edit"></i> Edit Business
+        </a>
+        <a href="{% url 'business_list' %}" class="btn" style="background: #6c757d;">← Back to Businesses</a>
+    </div>
 </div>
 
 <!-- Business Information -->
@@ -22,10 +27,18 @@
     <p><strong>Pages:</strong> {{ business.scraped_pages }}/{{ business.total_pages }} crawled</p>
     <p><strong>Created:</strong> {{ business.created_at|date:"M j, Y g:i A" }}</p>
 
-    <div style="margin-top: 20px;">
+    <div style="margin-top: 20px; display: flex; gap: 10px;">
         <button id="crawl-btn" onclick="crawlWebsite({{ business.id }})" class="btn btn-success">
-            Crawl Website
+            <i class="fas fa-search"></i> Crawl Website
         </button>
+        <a href="{% url 'export_data' business.id %}?format=json" class="btn" style="background: #ffc107; color: black;">
+            <i class="fas fa-download"></i> Export Data
+        </a>
+        {% if business.total_pages > 0 %}
+        <button onclick="recrawlBusiness({{ business.id }})" class="btn" style="background: #fd7e14; color: white;">
+            <i class="fas fa-sync-alt"></i> Re-crawl
+        </button>
+        {% endif %}
     </div>
 </div>
 
@@ -76,7 +89,7 @@ function crawlWebsite(businessId) {
     businessStatus.textContent = 'crawling';
     businessStatus.className = 'status status-crawling';
 
-    fetch(`/businesses/${businessId}/crawl/`, {
+    fetch(`/scraping/${businessId}/crawl/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -108,6 +121,41 @@ function crawlWebsite(businessId) {
         button.disabled = false;
         button.textContent = originalText;
         alert('Error: ' + error);
+    });
+}
+
+function recrawlBusiness(businessId) {
+    if (!confirm('This will delete all existing scraped pages and re-crawl the website. Continue?')) {
+        return;
+    }
+
+    const businessStatus = document.getElementById('business-status');
+    businessStatus.textContent = 'crawling';
+    businessStatus.className = 'status status-crawling';
+
+    fetch(`/scraping/${businessId}/recrawl/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            businessStatus.textContent = 'completed';
+            businessStatus.className = 'status status-completed';
+            alert(data.message);
+            location.reload();
+        } else {
+            businessStatus.textContent = 'failed';
+            businessStatus.className = 'status status-failed';
+            alert('Re-crawl failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        businessStatus.textContent = 'failed';
+        businessStatus.className = 'status status-failed';
+        alert('Network error: ' + error.message);
     });
 }
 </script>

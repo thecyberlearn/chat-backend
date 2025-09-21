@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+import requests
+from urllib.parse import urlparse
 
 
 class Business(models.Model):
@@ -47,6 +50,70 @@ class Business(models.Model):
     @property
     def scraped_pages(self):
         return self.pages.filter(success=True).count()
+
+    def clean(self):
+        """Validate the website URL"""
+        if self.website_url:
+            # Parse URL
+            parsed = urlparse(self.website_url)
+
+            # Check if URL has scheme and netloc
+            if not parsed.scheme or not parsed.netloc:
+                raise ValidationError({'website_url': 'Please enter a valid URL with http:// or https://'})
+
+            # Check if scheme is http or https
+            if parsed.scheme not in ['http', 'https']:
+                raise ValidationError({'website_url': 'URL must start with http:// or https://'})
+
+    def update_website_url(self, new_url):
+        """
+        Update website URL and optionally clear existing pages
+
+        Args:
+            new_url (str): The new website URL
+
+        Returns:
+            dict: Result of the update operation
+        """
+        old_url = self.website_url
+
+        # Validate new URL
+        self.website_url = new_url
+        try:
+            self.clean()
+        except ValidationError as e:
+            # Restore old URL if validation fails
+            self.website_url = old_url
+            return {
+                'success': False,
+                'error': str(e.message_dict.get('website_url', ['Invalid URL'])[0])
+            }
+
+        # Test if URL is accessible
+        try:
+            response = requests.head(new_url, timeout=10, allow_redirects=True)
+            if response.status_code >= 400:
+                self.website_url = old_url
+                return {
+                    'success': False,
+                    'error': f'URL returned status code {response.status_code}. Please check if the website is accessible.'
+                }
+        except requests.RequestException as e:
+            self.website_url = old_url
+            return {
+                'success': False,
+                'error': f'Cannot access URL: {str(e)}'
+            }
+
+        # Save the new URL
+        self.save()
+
+        return {
+            'success': True,
+            'message': f'Website URL updated from {old_url} to {new_url}',
+            'old_url': old_url,
+            'new_url': new_url
+        }
 
 
 class CrawledPage(models.Model):
